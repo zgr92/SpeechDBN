@@ -84,14 +84,14 @@ def getTargets(path, frames):
 def load_data(n_frames=11):
     valid_set_x = getMFCCFeatures('../data/speech/valid/merged.mfcc', n_frames)
     valid_set_y = getTargets('../data/speech/valid/merged.target', n_frames)
+
     train_set_x = getMFCCFeatures('../data/speech/train/merged.mfcc', n_frames)
     train_set_y = getTargets('../data/speech/train/merged.target', n_frames)
     
     test_set_x = getMFCCFeatures('../data/speech/valid/merged.mfcc', n_frames)
     test_set_y = getTargets('../data/speech/valid/merged.target', n_frames)
 
-    def shared_dataset(data_xy, borrow=True):
-        data_x, data_y = data_xy
+    def shared_dataset(data_x, data_y, borrow=True):
         shared_x = theano.shared(numpy.asarray(data_x,
                                                dtype=theano.config.floatX),
                                  borrow=borrow)
@@ -100,9 +100,9 @@ def load_data(n_frames=11):
                                  borrow=borrow)
         return shared_x, T.cast(shared_y, 'int32')
 
-    valid_set_x, valid_set_y = shared_dataset(valid_set)
-    test_set_x, test_set_y = shared_dataset(test_set)
-    train_set_x, train_set_y = shared_dataset(train_set)
+    valid_set_x, valid_set_y = shared_dataset(valid_set_x, valid_set_y)
+    test_set_x, test_set_y = shared_dataset(test_set_x, test_set_y)
+    train_set_x, train_set_y = shared_dataset(train_set_x, train_set_y)
 
     rval = [(train_set_x, train_set_y), (valid_set_x, valid_set_y),
             (test_set_x, test_set_y)]
