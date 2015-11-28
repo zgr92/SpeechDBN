@@ -88,8 +88,8 @@ def load_data(n_frames=11):
     train_set_x = getMFCCFeatures('../data/speech/train/merged.mfcc', n_frames)
     train_set_y = getTargets('../data/speech/train/merged.target', n_frames)
     
-    test_set_x = getMFCCFeatures('../data/speech/valid/merged.mfcc', n_frames)
-    test_set_y = getTargets('../data/speech/valid/merged.target', n_frames)
+    test_set_x = getMFCCFeatures('../data/speech/test/merged.mfcc', n_frames)
+    test_set_y = getTargets('../data/speech/test/merged.target', n_frames)
 
     def shared_dataset(data_x, data_y, borrow=True):
         shared_x = theano.shared(numpy.asarray(data_x,
