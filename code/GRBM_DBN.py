@@ -315,7 +315,7 @@ def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
         if this_validation_loss > last_validation_loss:
             current_lr /= 2.
             print(('    learning rate halved to %f') %
-                  (epoch, current_lr))
+                  (current_lr))
 
         last_validation_loss = this_validation_loss
 
