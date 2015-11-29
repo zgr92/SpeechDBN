@@ -210,16 +210,24 @@ class GRBM_DBN(object):
         return numpy.concatenate([p.get_value().flatten() for p in self.params])
 
     def save(self, filename):
-        numpy.save(filename, self.get_params())
+        f = file(filename, 'wb')
+        cPickle.dump(self, f, protocol=cPickle.HIGHEST_PROTOCOL)
+        f.close()
 
-    def load(self, filename):
-        self.updateparams(numpy.load(filename))
+    @staticmethod
+    def load(filename):
+        f = file(filename, 'rb')
+        loaded_obj = cPickle.load(f)
+        f.close()
+        return loaded_obj
 
 
 def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
              pretrain_lr=[0.002, 0.02], k=1,
              datasets=None, batch_size=128,
-             hidden_layers_sizes=[1024, 1024, 1024]):
+             hidden_layers_sizes=[1024, 1024, 1024],
+             n_ins=784, n_outs=10, filename="../data/DBN.pickle",
+             load=True, save=True):
 
     if datasets is None:
         from load_data_MNIST import load_data
@@ -234,46 +242,65 @@ def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
 
     # numpy random generator
     numpy_rng = numpy.random.RandomState(123)
-    print '... building the model'
-    # construct the Deep Belief Network
-    dbn = GRBM_DBN(numpy_rng=numpy_rng, n_ins=28 * 28,
-                hidden_layers_sizes=hidden_layers_sizes,
-                n_outs=10)
 
-    #########################
-    # PRETRAINING THE MODEL #
-    #########################
-    print '... getting the pretraining functions'
-    pretraining_fns = dbn.pretraining_functions(train_set_x=train_set_x,
-                                                batch_size=batch_size,
-                                                k=k)
+    loaded = False
 
-    print '... pre-training the model'
-    start_time = time.clock()
-    ## Pre-train layer-wise
-    for i in xrange(dbn.n_layers):
-        start_time_temp = time.clock()
-        if i==0:
-            pretrain_lr_new = pretrain_lr[0]
-            pretraining_epochs_new = pretraining_epochs[0]
+    if load:
+        print '... trying to load the model'
+
+        if os.path.isfile(filename):
+            dbn = GRBM_DBN.load(filename)
+            loaded = True
+            print '... model loaded'
         else:
-            pretrain_lr_new = pretrain_lr[1]
-            pretraining_epochs_new = pretraining_epochs[1]
-        # go through pretraining epochs
-        for epoch in xrange(pretraining_epochs_new):
-            # go through the training set
-            c = []
-            for batch_index in xrange(n_train_batches):
-                c.append(pretraining_fns[i](index=batch_index,
-                                            lr=pretrain_lr_new))
-            end_time_temp = time.clock()
-            print 'Pre-training layer %i, epoch %d, cost %f ' % (i + 1, epoch + 1, numpy.mean(c)) + ' ran for %d sec' % ((end_time_temp - start_time_temp) )
+            print '... couldn\' find the model file'
+
+    if not loaded:
+        print '... building the model'
+        # construct the Deep Belief Network
+        dbn = GRBM_DBN(numpy_rng=numpy_rng, n_ins=n_ins,
+                    hidden_layers_sizes=hidden_layers_sizes,
+                    n_outs=n_outs)
+
+        #########################
+        # PRETRAINING THE MODEL #
+        #########################
+
+        print '... getting the pretraining functions'
+        pretraining_fns = dbn.pretraining_functions(train_set_x=train_set_x,
+                                                    batch_size=batch_size,
+                                                    k=k)
+
+        print '... pre-training the model'
+        start_time = time.clock()
+        ## Pre-train layer-wise
+        for i in xrange(dbn.n_layers):
+            start_time_temp = time.clock()
+            if i==0:
+                pretrain_lr_new = pretrain_lr[0]
+                pretraining_epochs_new = pretraining_epochs[0]
+            else:
+                pretrain_lr_new = pretrain_lr[1]
+                pretraining_epochs_new = pretraining_epochs[1]
+            # go through pretraining epochs
+            for epoch in xrange(pretraining_epochs_new):
+                # go through the training set
+                c = []
+                for batch_index in xrange(n_train_batches):
+                    c.append(pretraining_fns[i](index=batch_index,
+                                                lr=pretrain_lr_new))
+                end_time_temp = time.clock()
+                print 'Pre-training layer %i, epoch %d, cost %f ' % (i + 1, epoch + 1, numpy.mean(c)) + ' ran for %d sec' % ((end_time_temp - start_time_temp) )
 
 
-    end_time = time.clock()
-    print >> sys.stderr, ('The pretraining code for file ' +
-                          os.path.split(__file__)[1] +
-                          ' ran for %.2fm' % ((end_time - start_time) / 60.))
+        end_time = time.clock()
+        print >> sys.stderr, ('The pretraining code for file ' +
+                              os.path.split(__file__)[1] +
+                              ' ran for %.2fm' % ((end_time - start_time) / 60.))
+
+        if save:
+            print '... saving the model'
+            dbn.save(filename)
 
     ########################
     # FINETUNING THE MODEL #
