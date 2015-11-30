@@ -366,5 +366,5 @@ def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
         ts = time.time()
         st = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
         print '... saving the final model'
-        dbn.save(filename + '.final ' + st)
+        dbn.save(st + ' ' + filename)
 
