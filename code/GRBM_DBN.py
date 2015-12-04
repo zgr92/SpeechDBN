@@ -388,7 +388,7 @@ def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
     
     if save:
         ts = time.time()
-        st = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
+        st = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d_%H-%M-%S')
         print '... saving the final model'
-        dbn.save(st + ' ' + filename)
+        dbn.save(st + '_' + filename)
 
