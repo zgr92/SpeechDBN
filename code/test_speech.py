@@ -1,7 +1,7 @@
 from GRBM_DBN import test_GRBM_DBN
 from load_data_speech import load_data
 
-N_FRAMES = 11
+N_FRAMES = 9
 
 datasets = load_data(n_frames=N_FRAMES)
 
