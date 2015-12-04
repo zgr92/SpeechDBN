@@ -246,6 +246,8 @@ class GRBM_DBN(object):
 
         self.finetune_cost = self.logLayer.negative_log_likelihood(self.y) + 0.5 * self.weight_decay * self.L2
 
+        self.oldparams = [theano.shared(numpy.zeros(p.get_value(borrow=True).shape, dtype=theano.config.floatX)) for p in self.params]
+
 
 
 def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
