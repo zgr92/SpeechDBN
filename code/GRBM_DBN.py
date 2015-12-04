@@ -26,12 +26,14 @@ warnings.filterwarnings("ignore")
 class GRBM_DBN(object):
 
     def __init__(self, numpy_rng, theano_rng=None, n_ins=784,
-                 hidden_layers_sizes=[500, 500], n_outs=10):
+                 hidden_layers_sizes=[500, 500], n_outs=10,
+                 weight_decay=0.0002):
 
         self.sigmoid_layers = []
         self.rbm_layers = []
         self.params = []
         self.n_layers = len(hidden_layers_sizes)
+        self.weight_decay = weight_decay
 
         assert self.n_layers > 0
         if not theano_rng:
@@ -81,14 +83,23 @@ class GRBM_DBN(object):
             n_out=n_outs)
         self.params.extend(self.logLayer.params)
 
+        # add regularization
+        L2=[]
+        for i in range(self.n_layers):
+            L2.append((self.sigmoid_layers[i].W ** 2).sum())
+        L2.append((self.logLayer.W ** 2).sum())
+        self.L2 = T.sum(L2) 
+
         # compute the cost for second phase of training, defined as the
         # negative log likelihood of the logistic regression (output) layer
-        self.finetune_cost = self.logLayer.negative_log_likelihood(self.y)
+        self.finetune_cost = self.logLayer.negative_log_likelihood(self.y) + 0.5 * self.weight_decay * self.L2
 
         # compute the gradients with respect to the model parameters
         # symbolic variable that points to the number of errors made on the
         # minibatch given by self.x and self.y
         self.errors = self.logLayer.errors(self.y)
+
+        self.oldparams = [theano.shared(numpy.zeros(p.get_value(borrow=True).shape, dtype=theano.config.floatX)) for p in self.params]
 
     def pretraining_functions(self, train_set_x, batch_size, k):
         # index to a [mini]batch
@@ -124,7 +135,7 @@ class GRBM_DBN(object):
 
         return pretrain_fns
 
-    def build_finetune_functions(self, datasets, batch_size):
+    def build_finetune_functions(self, datasets, batch_size, momentum):
         '''Generates a function `train` that implements one step of
         finetuning, a function `validate` that computes the error on a
         batch from the validation set, and a function `test` that
@@ -162,8 +173,10 @@ class GRBM_DBN(object):
         # compute list of fine-tuning updates
         updates = []
 
-        for param, gparam in zip(self.params, gparams):
-            updates.append((param, param - gparam * learning_rate))
+        for param, gparam, oldparam in zip(self.params, gparams, self.oldparams):
+            delta = learning_rate * gparam + momentum * oldparam
+            updates.append((param, param - delta))
+            updates.append((oldparam, delta))
 
         train_fn = theano.function(inputs=[index, learning_rate],
               outputs=self.finetune_cost,
@@ -224,8 +237,8 @@ class GRBM_DBN(object):
 
 
 def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
-             pretrain_lr=[0.002, 0.02], k=1,
-             datasets=None, batch_size=128,
+             pretrain_lr=[0.002, 0.02], k=1, weight_decay=0.0002,
+             momentum=0.9, datasets=None, batch_size=128,
              hidden_layers_sizes=[1024, 1024, 1024],
              n_ins=784, n_outs=10, filename="../data/DBN.pickle",
              load=True, save=True):
@@ -310,7 +323,7 @@ def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
     # get the training, validation and testing function for the model
     print '... getting the finetuning functions'
     train_fn, validate_model, test_model = dbn.build_finetune_functions(
-                datasets=datasets, batch_size=batch_size)
+                datasets=datasets, batch_size=batch_size, momentum=momentum)
 
     print '... finetunning the model'
 
