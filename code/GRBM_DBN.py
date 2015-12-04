@@ -236,6 +236,8 @@ class GRBM_DBN(object):
         return loaded_obj
 
     def update_finetune_cost(self, weight_decay):
+        self.weight_decay = weight_decay
+
         L2=[]
         for i in range(self.n_layers):
             L2.append((self.sigmoid_layers[i].W ** 2).sum())
