@@ -235,6 +235,16 @@ class GRBM_DBN(object):
         f.close()
         return loaded_obj
 
+    def update_finetune_cost(self, weight_decay):
+        L2=[]
+        for i in range(self.n_layers):
+            L2.append((self.sigmoid_layers[i].W ** 2).sum())
+        L2.append((self.logLayer.W ** 2).sum())
+        self.L2 = T.sum(L2)
+
+        self.finetune_cost = self.logLayer.negative_log_likelihood(self.y) + 0.5 * self.weight_decay * self.L2
+
+
 
 def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
              pretrain_lr=[0.002, 0.02], k=1, weight_decay=0.0002,
@@ -264,6 +274,7 @@ def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
 
         if os.path.isfile(filename):
             dbn = GRBM_DBN.load(filename)
+            dbn.update_finetune_cost(weight_decay=weight_decay)
             loaded = True
             print '... model loaded'
         else:
