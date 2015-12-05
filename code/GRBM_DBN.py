@@ -6,6 +6,7 @@ import os
 import sys
 import time
 import datetime
+import re
 
 import numpy
 
@@ -394,5 +395,5 @@ def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
         ts = time.time()
         st = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d_%H-%M-%S')
         print '... saving the final model'
-        dbn.save(st + '_' + filename)
+        dbn.save(re.sub('.pickle$', '', filename) + '_' + st + '.final.pickle')
 
