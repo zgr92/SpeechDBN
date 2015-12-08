@@ -270,7 +270,7 @@ def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
     n_train_batches = train_set_x.get_value(borrow=True).shape[0] / batch_size
 
     # numpy random generator
-    numpy_rng = numpy.random.RandomState(123)
+    numpy_rng = numpy.random.RandomState()
 
     loaded = False
 
