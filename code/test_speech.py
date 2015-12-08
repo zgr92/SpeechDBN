@@ -13,8 +13,8 @@ for _ in range(ITERATIONS):
         test_score, val_score = test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
             pretrain_lr=[0.002, 0.02], k=1, weight_decay=0.0002,
             momentum=0.9, batch_size=128, datasets=datasets,
-            hidden_layers_sizes=n_layers*[LAYER_SIZE],
-            filename='../data/speech.pickle')
+            hidden_layers_sizes=n_layers*[LAYER_SIZE], load=False,
+            filename=('../data/speech_%d_%d_%d.pickle'%(N_FRAMES, LAYER_SIZE, n_layers)))
 
         log = '../data/speech.log'
         with open(log, 'a') as f:
