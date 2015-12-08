@@ -18,5 +18,5 @@ for _ in range(ITERATIONS):
 
         log = '../data/speech.log'
         with open(log, 'a') as f:
-            f.write('N_FRAMES=%d, LAYER_SIZE=%d, n_layers=%d, test_score=%f%%, val_score=%f%%\n' % (N_FRAMES, LAYER_SIZE, n_layers, test_score, val_score) 
+            f.write('N_FRAMES=%d, LAYER_SIZE=%d, n_layers=%d, test_score=%f%%, val_score=%f%%\n' % (N_FRAMES, LAYER_SIZE, n_layers, test_score, val_score))
 

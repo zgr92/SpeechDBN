@@ -17,5 +17,5 @@ for _ in range(ITERATIONS):
 
         log = '../data/MNIST.log'
         with open(log, 'a') as f:
-            f.write('LAYER_SIZE=%d, n_layers=%d, test_score=%f%%, val_score=%f%%\n' % (LAYER_SIZE, n_layers, test_score, val_score) 
+            f.write('LAYER_SIZE=%d, n_layers=%d, test_score=%f%%, val_score=%f%%\n' % (LAYER_SIZE, n_layers, test_score, val_score))
 
