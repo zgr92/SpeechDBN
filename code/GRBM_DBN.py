@@ -326,6 +326,7 @@ def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
 
                 if numpy.abs(prev_cost) < numpy.abs(numpy.mean(c)):
                     pretrain_lr_new /= 2.
+                    print(('    learning rate halved to %f') % (pretrain_lr_new))
 
                 if pretrain_lr_new < 0.0005:
                     break
@@ -406,4 +407,6 @@ def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
         st = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d_%H-%M-%S')
         print '... saving the final model'
         dbn.save(re.sub('.pickle$', '', filename) + '_' + st + '.final.pickle')
+
+    return (best_validation_loss * 100., test_score * 100.)
 
