@@ -314,6 +314,7 @@ def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
                 pretraining_epochs_new = pretraining_epochs[1]
             # go through pretraining epochs
             prev_cost = numpy.inf
+            pretrain_lr_stop = pretrain_lr_new / 16.
 
             for epoch in xrange(pretraining_epochs_new):
                 # go through the training set
@@ -328,7 +329,7 @@ def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
                     pretrain_lr_new /= 2.
                     print(('    learning rate halved to %f') % (pretrain_lr_new))
 
-                if pretrain_lr_new < 0.0005:
+                if pretrain_lr_new < pretrain_lr_stop:
                     break
 
                 prev_cost = numpy.mean(c)
