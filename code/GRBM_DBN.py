@@ -313,6 +313,8 @@ def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
                 pretrain_lr_new = pretrain_lr[1]
                 pretraining_epochs_new = pretraining_epochs[1]
             # go through pretraining epochs
+            prev_cost = numpy.inf
+
             for epoch in xrange(pretraining_epochs_new):
                 # go through the training set
                 c = []
@@ -321,6 +323,14 @@ def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
                                                 lr=pretrain_lr_new))
                 end_time_temp = time.clock()
                 print 'Pre-training layer %i, epoch %d, cost %f ' % (i + 1, epoch + 1, numpy.mean(c)) + ' ran for %d sec' % ((end_time_temp - start_time_temp) )
+
+                if numpy.abs(prev_cost) < numpy.abs(numpy.mean(c)):
+                    pretrain_lr_new /= 2.
+
+                if pretrain_lr_new < 0.0005:
+                    break
+
+                prev_cost = numpy.mean(c)
 
 
         end_time = time.clock()
