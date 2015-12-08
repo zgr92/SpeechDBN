@@ -226,7 +226,7 @@ class RBM(object):
         chain_end = nv_samples[-1]
 
         cost = T.mean(self.free_energy(self.input)) - T.mean(
-            self.free_energy(chain_end))
+            self.free_energy(chain_end)) + 0.001 * (self.W ** 2).sum()
         # We must not compute the gradient through the gibbs sampling
         gparams = T.grad(cost, self.params, consider_constant=[chain_end])
 
@@ -309,7 +309,7 @@ class RBM(object):
         cross_entropy = T.mean(
                 T.sum(self.input * T.log(T.nnet.sigmoid(pre_sigmoid_nv)) +
                 (1 - self.input) * T.log(1 - T.nnet.sigmoid(pre_sigmoid_nv)),
-                      axis=1)) + 0.001 * (self.W ** 2).sum()
+                      axis=1))
 
         return cross_entropy
 
