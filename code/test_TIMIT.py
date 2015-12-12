@@ -1,5 +1,5 @@
 from GRBM_DBN import test_GRBM_DBN
-from load_data_speech import load_data
+from load_data_TIMIT import load_data
 
 N_FRAMES = 11
 LAYER_SIZE = [256, 512, 1024]
@@ -15,10 +15,10 @@ for _ in range(ITERATIONS):
                 pretrain_lr=[0.002, 0.02], k=1, weight_decay=0.0002,
                 momentum=0.9, batch_size=128, datasets=datasets,
                 hidden_layers_sizes=n_layers*[layer_size], load=False,
-                n_ins=39*N_FRAMES, n_outs=120,
-                filename=('../data/speech_%d_%d_%d.pickle'%(N_FRAMES, layer_size, n_layers)))
+                n_ins=39*N_FRAMES, n_outs=40,
+                filename=('../data/TIMIT_%d_%d_%d.pickle'%(N_FRAMES, layer_size, n_layers)))
 
-            log = '../data/speech.log'
+            log = '../data/TIMIT.log'
             with open(log, 'a') as f:
                 f.write('N_FRAMES=%d, LAYER_SIZE=%d, n_layers=%d, test_score=%f%%, val_score=%f%%\n' % (N_FRAMES, layer_size, n_layers, test_score, val_score))
 
