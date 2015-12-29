@@ -257,7 +257,7 @@ def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
              momentum=0.9, datasets=None, batch_size=128,
              hidden_layers_sizes=[1024, 1024, 1024],
              n_ins=784, n_outs=10, filename="../data/DBN.pickle",
-             load=True, save=True):
+             load=True, save=True, verbose=False):
 
     if datasets is None:
         from load_data_MNIST import load_data
@@ -313,9 +313,8 @@ def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
             else:
                 pretrain_lr_new = pretrain_lr[1]
                 pretraining_epochs_new = pretraining_epochs[1]
+
             # go through pretraining epochs
-            prev_cost = numpy.inf
-            pretrain_lr_stop = pretrain_lr_new / 16.
 
             for epoch in xrange(pretraining_epochs_new):
                 # go through the training set
@@ -326,14 +325,16 @@ def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
                 end_time_temp = time.clock()
                 print 'Pre-training layer %i, epoch %d, cost %f ' % (i + 1, epoch + 1, numpy.mean(c)) + ' ran for %d sec' % ((end_time_temp - start_time_temp) )
 
-                if numpy.abs(prev_cost) < numpy.abs(numpy.mean(c)):
-                    pretrain_lr_new /= 2.
-                    print(('    learning rate halved to %f') % (pretrain_lr_new))
-
-                if pretrain_lr_new < pretrain_lr_stop:
-                    break
-
-                prev_cost = numpy.mean(c)
+                if verbose:
+                    image = Image.fromarray(
+                        tile_raster_images(
+                            X=dbn.rbm_layers[i].W.get_value(borrow=True).T,
+                            img_shape=(28, 28),
+                            tile_shape=(10, 10),
+                            tile_spacing=(1, 1)
+                        )
+                    )
+                    image.save('filters_at_layer_%i_epoch_%i.png' % (i, epoch))
 
 
         end_time = time.clock()
