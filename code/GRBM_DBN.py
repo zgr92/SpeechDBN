@@ -258,7 +258,7 @@ def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
              hidden_layers_sizes=[1024, 1024, 1024],
              n_ins=784, n_outs=10, filename="../data/DBN.pickle",
              load=True, save=True, verbose=False, pretraining_start=0,
-             pretraining_stop=-1):
+             pretraining_stop=-1, finetune=True):
 
     if datasets is None:
         from load_data_MNIST import load_data
@@ -355,66 +355,67 @@ def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
     # FINETUNING THE MODEL #
     ########################
 
-    # get the training, validation and testing function for the model
-    print '... getting the finetuning functions'
-    train_fn, validate_model, test_model = dbn.build_finetune_functions(
-                datasets=datasets, batch_size=batch_size, momentum=momentum)
+    if finetune:
+        # get the training, validation and testing function for the model
+        print '... getting the finetuning functions'
+        train_fn, validate_model, test_model = dbn.build_finetune_functions(
+                    datasets=datasets, batch_size=batch_size, momentum=momentum)
 
-    print '... finetunning the model'
+        print '... finetunning the model'
 
-    best_params = None
-    best_validation_loss = numpy.inf
-    last_validation_loss = numpy.inf
-    test_score = 0.
-    start_time = time.clock()
-    current_lr = finetune_lr
-    done_looping = False
-    epoch = 0
+        best_params = None
+        best_validation_loss = numpy.inf
+        last_validation_loss = numpy.inf
+        test_score = 0.
+        start_time = time.clock()
+        current_lr = finetune_lr
+        done_looping = False
+        epoch = 0
 
-    while not done_looping:
-        epoch = epoch + 1
-        for minibatch_index in xrange(n_train_batches):
+        while not done_looping:
+            epoch = epoch + 1
+            for minibatch_index in xrange(n_train_batches):
 
-            minibatch_avg_cost = train_fn(minibatch_index, current_lr)
-            iter = (epoch - 1) * n_train_batches + minibatch_index
+                minibatch_avg_cost = train_fn(minibatch_index, current_lr)
+                iter = (epoch - 1) * n_train_batches + minibatch_index
 
-        import warnings
-        warnings.filterwarnings("ignore")
-        validation_losses = validate_model()
-        this_validation_loss = numpy.mean(validation_losses)
-        print('epoch %i, validation error %f %%' % \
-              (epoch, this_validation_loss * 100.))
+            import warnings
+            warnings.filterwarnings("ignore")
+            validation_losses = validate_model()
+            this_validation_loss = numpy.mean(validation_losses)
+            print('epoch %i, validation error %f %%' % \
+                  (epoch, this_validation_loss * 100.))
 
-        if this_validation_loss < best_validation_loss:
-            best_validation_loss = this_validation_loss
+            if this_validation_loss < best_validation_loss:
+                best_validation_loss = this_validation_loss
 
-        if this_validation_loss > last_validation_loss:
-            current_lr /= 2.
-            print(('    learning rate halved to %f') %
-                  (current_lr))
+            if this_validation_loss > last_validation_loss:
+                current_lr /= 2.
+                print(('    learning rate halved to %f') %
+                      (current_lr))
 
-        last_validation_loss = this_validation_loss
+            last_validation_loss = this_validation_loss
 
-        if current_lr < 0.001:
-            done_looping = True
+            if current_lr < 0.001:
+                done_looping = True
 
-    test_losses = test_model()
-    test_score = numpy.mean(test_losses)
+        test_losses = test_model()
+        test_score = numpy.mean(test_losses)
 
-    end_time = time.clock()
-    print(('Optimization complete with best validation score of %f %%,'
-           'with test performance %f %%') %
-                 (best_validation_loss * 100., test_score * 100.))
-    print >> sys.stderr, ('The fine tuning code for file ' +
-                          os.path.split(__file__)[1] +
-                          ' ran for %.2fm' % ((end_time - start_time)
-                                              / 60.))
-    
-    if save:
-        ts = time.time()
-        st = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d_%H-%M-%S')
-        print '... saving the final model'
-        dbn.save(re.sub('.pickle$', '', filename) + '_' + st + '.final.pickle')
+        end_time = time.clock()
+        print(('Optimization complete with best validation score of %f %%,'
+               'with test performance %f %%') %
+                     (best_validation_loss * 100., test_score * 100.))
+        print >> sys.stderr, ('The fine tuning code for file ' +
+                              os.path.split(__file__)[1] +
+                              ' ran for %.2fm' % ((end_time - start_time)
+                                                  / 60.))
+        
+        if save:
+            ts = time.time()
+            st = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d_%H-%M-%S')
+            print '... saving the final model'
+            dbn.save(re.sub('.pickle$', '', filename) + '_' + st + '.final.pickle')
 
-    return (best_validation_loss * 100., test_score * 100.)
+        return (best_validation_loss * 100., test_score * 100.)
 
