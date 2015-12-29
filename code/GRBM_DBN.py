@@ -257,7 +257,8 @@ def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
              momentum=0.9, datasets=None, batch_size=128,
              hidden_layers_sizes=[1024, 1024, 1024],
              n_ins=784, n_outs=10, filename="../data/DBN.pickle",
-             load=True, save=True, verbose=False):
+             load=True, save=True, verbose=False, pretraining_start=0,
+             pretraining_stop=-1):
 
     if datasets is None:
         from load_data_MNIST import load_data
@@ -305,7 +306,11 @@ def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
         print '... pre-training the model'
         start_time = time.clock()
         ## Pre-train layer-wise
-        for i in xrange(dbn.n_layers):
+
+        if pretraining_stop == -1:
+            pretraining_stop = dbn.n_layers
+
+        for i in xrange(pretraining_start, pretraining_stop):
             start_time_temp = time.clock()
             if i==0:
                 pretrain_lr_new = pretrain_lr[0]
