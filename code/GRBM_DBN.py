@@ -74,7 +74,8 @@ class GRBM_DBN(object):
                             n_visible=input_size,
                             n_hidden=hidden_layers_sizes[i],
                             W=sigmoid_layer.W,
-                            hbias=sigmoid_layer.b)
+                            hbias=sigmoid_layer.b,
+                            weight_decay=weight_decay)
             self.rbm_layers.append(rbm_layer)
 
         # We now need to add a logistic layer on top of the MLP

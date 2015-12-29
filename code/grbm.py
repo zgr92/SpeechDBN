@@ -7,12 +7,10 @@ class GBRBM(RBM):
 
     def __init__(self, input, n_visible=784, n_hidden=500, \
                  W=None, hbias=None, vbias=None, numpy_rng=None, transpose=False,
-                 theano_rng=None):
-
-            # initialize parent class (RBM)
+                 theano_rng=None, weight_decay=0.0002):
             RBM.__init__(self, input=input, n_visible=n_visible, n_hidden=n_hidden, \
                          W=W, hbias=hbias, vbias=vbias, numpy_rng=numpy_rng,
-                         theano_rng=theano_rng)
+                         theano_rng=theano_rng, weight_decay)
 
 
     def type(self):

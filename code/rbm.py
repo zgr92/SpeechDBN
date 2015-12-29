@@ -25,7 +25,7 @@ class RBM(object):
     """Restricted Boltzmann Machine (RBM)  """
     def __init__(self, input=None, n_visible=784, n_hidden=500, \
         W=None, hbias=None, vbias=None, numpy_rng=None,
-        theano_rng=None):
+        theano_rng=None, weight_decay=0.0002):
         """
         RBM constructor. Defines the parameters of the model along with
         basic operations for inferring hidden from visible (and vice-versa),
@@ -95,6 +95,7 @@ class RBM(object):
         self.hbias = hbias
         self.vbias = vbias
         self.theano_rng = theano_rng
+        self.weight_decay = weight_decay
         # **** WARNING: It is not a good idea to put things in this list
         # other than shared variables created in this function.
         self.params = [self.W, self.hbias, self.vbias]
@@ -226,7 +227,7 @@ class RBM(object):
         chain_end = nv_samples[-1]
 
         cost = T.mean(self.free_energy(self.input)) - T.mean(
-            self.free_energy(chain_end)) + 0.001 * (self.W ** 2).sum()
+            self.free_energy(chain_end)) + 0.5 * self.weight_decay * (self.W ** 2).sum()
         # We must not compute the gradient through the gibbs sampling
         gparams = T.grad(cost, self.params, consider_constant=[chain_end])
 
