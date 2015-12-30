@@ -9,7 +9,7 @@ class GBRBM(RBM):
                  theano_rng=None, weight_decay=0.0002):
             RBM.__init__(self, input=input, n_visible=n_visible, n_hidden=n_hidden, \
                          W=W, hbias=hbias, vbias=vbias, numpy_rng=numpy_rng,
-                         theano_rng=theano_rng, weight_decay)
+                         theano_rng=theano_rng, weight_decay=weight_decay)
 
     def free_energy(self, v_sample):            
         wx_b = T.dot(v_sample, self.W) + self.hbias
