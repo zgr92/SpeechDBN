@@ -419,3 +419,5 @@ def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
 
         return (best_validation_loss * 100., test_score * 100.)
 
+    return (0., 0.)
+
