@@ -347,7 +347,7 @@ def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
                     X = valid_set_x[:20].eval()
                     hMean = sigmoid(numpy.dot(X, dbn.rbm_layers[i].W.get_value(borrow=True)) + dbn.rbm_layers[i].hbias.get_value(borrow=True))
                     image = Image.fromarray(hMean * 256)
-                    image.save('probabilities_at_layer_%i_epoch_%i.png' % (i, epoch))
+                    image.save('probabilities_at_layer_%i_epoch_%i.gif' % (i, epoch))
 
                 # go through the training set
                 c = []
