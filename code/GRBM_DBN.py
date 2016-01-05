@@ -24,6 +24,15 @@ from utils import normalize
 import warnings
 warnings.filterwarnings("ignore")
 
+from numpy import tanh, fabs, mean, ones
+from PIL import Image
+from matplotlib.pyplot import hist, title, subplot
+
+def sigmoid(xx):
+    return .5 * (1 + tanh(xx / 2.))
+    
+from utils import tile_raster_images
+
 class GRBM_DBN(object):
 
     def __init__(self, numpy_rng, theano_rng=None, n_ins=784,
@@ -322,15 +331,8 @@ def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
             # go through pretraining epochs
 
             for epoch in xrange(pretraining_epochs_new):
-                # go through the training set
-                c = []
-                for batch_index in xrange(n_train_batches):
-                    c.append(pretraining_fns[i](index=batch_index,
-                                                lr=pretrain_lr_new))
-                end_time_temp = time.clock()
-                print 'Pre-training layer %i, epoch %d, cost %f ' % (i + 1, epoch + 1, numpy.mean(c)) + ' ran for %d sec' % ((end_time_temp - start_time_temp) )
-
                 if verbose:
+                    # weights
                     image = Image.fromarray(
                         tile_raster_images(
                             X=dbn.rbm_layers[i].W.get_value(borrow=True).T,
@@ -340,7 +342,20 @@ def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
                         )
                     )
                     image.save('filters_at_layer_%i_epoch_%i.png' % (i, epoch))
+                    
+                    # probabilities
+                    X = valid_set_x[:20].eval()
+                    hMean = sigmoid(numpy.dot(X, dbn.rbm_layers[i].W.get_value(borrow=True)) + dbn.rbm_layers[i].hbias.get_value(borrow=True))
+                    image = Image.fromarray(hMean * 256)
+                    image.save('probabilities_at_layer_%i_epoch_%i.png' % (i, epoch))
 
+                # go through the training set
+                c = []
+                for batch_index in xrange(n_train_batches):
+                    c.append(pretraining_fns[i](index=batch_index,
+                                                lr=pretrain_lr_new))
+                end_time_temp = time.clock()
+                print 'Pre-training layer %i, epoch %d, cost %f ' % (i + 1, epoch + 1, numpy.mean(c)) + ' ran for %d sec' % ((end_time_temp - start_time_temp) )
 
         end_time = time.clock()
         print >> sys.stderr, ('The pretraining code for file ' +
