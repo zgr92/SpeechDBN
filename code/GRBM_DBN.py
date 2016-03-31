@@ -30,7 +30,7 @@ from matplotlib.pyplot import hist, title, subplot
 
 def sigmoid(xx):
     return .5 * (1 + tanh(xx / 2.))
-    
+
 from utils import tile_raster_images
 
 class GRBM_DBN(object):
@@ -51,7 +51,7 @@ class GRBM_DBN(object):
         # allocate symbolic variables for the data
         self.x = T.matrix('x')  # the data is presented as rasterized images
         self.y = T.ivector('y')  # the labels are presented as 1D vector
-                                 # of [int] labels
+        # of [int] labels
 
         for i in xrange(self.n_layers):
             if i == 0:
@@ -78,13 +78,13 @@ class GRBM_DBN(object):
                 layer_type = RBM
 
             rbm_layer = layer_type(numpy_rng=numpy_rng,
-                            theano_rng=theano_rng,
-                            input=layer_input,
-                            n_visible=input_size,
-                            n_hidden=hidden_layers_sizes[i],
-                            W=sigmoid_layer.W,
-                            hbias=sigmoid_layer.b,
-                            weight_decay=weight_decay)
+                                   theano_rng=theano_rng,
+                                   input=layer_input,
+                                   n_visible=input_size,
+                                   n_hidden=hidden_layers_sizes[i],
+                                   W=sigmoid_layer.W,
+                                   hbias=sigmoid_layer.b,
+                                   weight_decay=weight_decay)
             self.rbm_layers.append(rbm_layer)
 
         # We now need to add a logistic layer on top of the MLP
@@ -99,7 +99,7 @@ class GRBM_DBN(object):
         for i in range(self.n_layers):
             L2.append((self.sigmoid_layers[i].W ** 2).sum())
         L2.append((self.logLayer.W ** 2).sum())
-        self.L2 = T.sum(L2) 
+        self.L2 = T.sum(L2)
 
         # compute the cost for second phase of training, defined as the
         # negative log likelihood of the logistic regression (output) layer
@@ -190,24 +190,24 @@ class GRBM_DBN(object):
             updates.append((oldparam, delta))
 
         train_fn = theano.function(inputs=[index, learning_rate],
-              outputs=self.finetune_cost,
-              updates=updates,
-              givens={self.x: train_set_x[index * batch_size:
-                                          (index + 1) * batch_size],
-                      self.y: train_set_y[index * batch_size:
-                                          (index + 1) * batch_size]})
+                                   outputs=self.finetune_cost,
+                                   updates=updates,
+                                   givens={self.x: train_set_x[index * batch_size:
+                                   (index + 1) * batch_size],
+                                           self.y: train_set_y[index * batch_size:
+                                           (index + 1) * batch_size]})
 
         test_score_i = theano.function([index], self.errors,
-                 givens={self.x: test_set_x[index * batch_size:
-                                            (index + 1) * batch_size],
-                         self.y: test_set_y[index * batch_size:
-                                            (index + 1) * batch_size]})
+                                       givens={self.x: test_set_x[index * batch_size:
+                                       (index + 1) * batch_size],
+                                               self.y: test_set_y[index * batch_size:
+                                               (index + 1) * batch_size]})
 
         valid_score_i = theano.function([index], self.errors,
-              givens={self.x: valid_set_x[index * batch_size:
-                                          (index + 1) * batch_size],
-                      self.y: valid_set_y[index * batch_size:
-                                          (index + 1) * batch_size]})
+                                        givens={self.x: valid_set_x[index * batch_size:
+                                        (index + 1) * batch_size],
+                                                self.y: valid_set_y[index * batch_size:
+                                                (index + 1) * batch_size]})
 
         # Create a function that scans the entire validation set
         def valid_score():
@@ -229,7 +229,7 @@ class GRBM_DBN(object):
             pshape = p.get_value().shape
             pnum = numpy.prod(pshape)
             p.set_value(inplaceupdate(p.get_value(borrow=True), newparams[paramscounter:paramscounter+pnum].reshape(*pshape)), borrow=True)
-            paramscounter += pnum 
+            paramscounter += pnum
 
     def get_params(self):
         return numpy.concatenate([p.get_value().flatten() for p in self.params])
@@ -262,12 +262,23 @@ class GRBM_DBN(object):
 
 
 def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
-             pretrain_lr=[0.002, 0.02], k=1, weight_decay=0.0002,
-             momentum=0.9, datasets=None, batch_size=128,
-             hidden_layers_sizes=[1024, 1024, 1024],
-             n_ins=784, n_outs=10, filename="../data/DBN.pickle",
-             load=True, save=True, verbose=False, pretraining_start=0,
-             pretraining_stop=-1, finetune=True):
+                  pretrain_lr=[0.002, 0.02], k=1, weight_decay=0.0002,
+                  momentum=0.9, datasets=None, batch_size=128,
+                  hidden_layers_sizes=[1024, 1024, 1024],
+                  n_ins=784, n_outs=10, filename="../data/DBN.pickle",
+                  load=True, save=True, verbose=False, pretraining_start=0,
+                  pretraining_stop=-1, finetune=True):
+
+    folder_name = 'finetune_lr=%d' % finetune_lr + \
+                  ' pretraining_epochs=%d-%d' % (pretraining_epochs[0], pretraining_epochs[1]) + \
+                  ' pretrain_lr=%d-%d' % (pretrain_lr[0], pretrain_lr[1]) + \
+                  ' k=%d' % k + \
+                  ' weight_decay=%d' % weight_decay + \
+                  ' momentum=%d' % momentum + \
+                  ' batch_size=%d' % batch_size + \
+                  ' hidden_layers_sizes=%d' % (hidden_layers_sizes[0])
+    if not os.path.exists(folder_name):
+        os.makedirs(folder_name)
 
     if datasets is None:
         from load_data_MNIST import load_data
@@ -300,8 +311,8 @@ def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
         print '... building the model'
         # construct the Deep Belief Network
         dbn = GRBM_DBN(numpy_rng=numpy_rng, n_ins=n_ins,
-                    hidden_layers_sizes=hidden_layers_sizes,
-                    n_outs=n_outs)
+                       hidden_layers_sizes=hidden_layers_sizes,
+                       n_outs=n_outs)
 
         #########################
         # PRETRAINING THE MODEL #
@@ -341,13 +352,13 @@ def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
                             tile_spacing=(1, 1)
                         )
                     )
-                    image.save('filters_at_layer_%i_epoch_%i.png' % (i, epoch))
-                    
+                    image.save(folder_name + '/filters_at_layer_%i_epoch_%i.png' % (i, epoch))
+
                     # probabilities
                     X = valid_set_x[:20].eval()
                     hMean = sigmoid(numpy.dot(X, dbn.rbm_layers[i].W.get_value(borrow=True)) + dbn.rbm_layers[i].hbias.get_value(borrow=True))
                     image = Image.fromarray(hMean * 256)
-                    image.save('probabilities_at_layer_%i_epoch_%i.gif' % (i, epoch))
+                    image.save(folder_name + '/probabilities_at_layer_%i_epoch_%i.gif' % (i, epoch))
 
                 # go through the training set
                 c = []
@@ -364,7 +375,7 @@ def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
 
         if save:
             print '... saving the model'
-            dbn.save(filename)
+            dbn.save(folder_name + "/" + filename)
 
     ########################
     # FINETUNING THE MODEL #
@@ -374,7 +385,7 @@ def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
         # get the training, validation and testing function for the model
         print '... getting the finetuning functions'
         train_fn, validate_model, test_model = dbn.build_finetune_functions(
-                    datasets=datasets, batch_size=batch_size, momentum=momentum)
+            datasets=datasets, batch_size=batch_size, momentum=momentum)
 
         print '... finetunning the model'
 
@@ -420,17 +431,17 @@ def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
         end_time = time.clock()
         print(('Optimization complete with best validation score of %f %%,'
                'with test performance %f %%') %
-                     (best_validation_loss * 100., test_score * 100.))
+              (best_validation_loss * 100., test_score * 100.))
         print >> sys.stderr, ('The fine tuning code for file ' +
                               os.path.split(__file__)[1] +
                               ' ran for %.2fm' % ((end_time - start_time)
                                                   / 60.))
-        
+
         if save:
             ts = time.time()
             st = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d_%H-%M-%S')
             print '... saving the final model'
-            dbn.save(re.sub('.pickle$', '', filename) + '_' + st + '.final.pickle')
+            dbn.save(folder_name + "/" + re.sub('.pickle$', '', filename) + '_' + st + '.final.pickle')
 
         return (best_validation_loss * 100., test_score * 100.)
 
