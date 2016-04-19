@@ -24,6 +24,10 @@ from utils import normalize
 import warnings
 warnings.filterwarnings("ignore")
 
+#!!!!! zeby nie rysowal na ekran nic
+import matplotlib
+matplotlib.use('Agg')
+
 from numpy import tanh, fabs, mean, ones
 from PIL import Image
 from matplotlib.pyplot import hist, title, subplot
@@ -52,7 +56,7 @@ class GRBM_DBN(object):
         self.x = T.matrix('x')  # the data is presented as rasterized images
         self.y = T.ivector('y')  # the labels are presented as 1D vector
                                  # of [int] labels
-
+       
         for i in xrange(self.n_layers):
             if i == 0:
                 input_size = n_ins
@@ -112,6 +116,8 @@ class GRBM_DBN(object):
 
         self.oldparams = [theano.shared(numpy.zeros(p.get_value(borrow=True).shape, dtype=theano.config.floatX)) for p in self.params]
 
+        self.predict = theano.function(inputs=[self.x], outputs = [self.logLayer.y_pred])
+        
     def pretraining_functions(self, train_set_x, batch_size, k):
         # index to a [mini]batch
         index = T.lscalar('index')  # index to a minibatch
@@ -259,7 +265,12 @@ class GRBM_DBN(object):
 
         self.oldparams = [theano.shared(numpy.zeros(p.get_value(borrow=True).shape, dtype=theano.config.floatX)) for p in self.params]
 
-
+    def classify(self, input):
+        
+        if len(input.shape) == 1:
+            input = [input]
+            
+        return self.predict(input)
 
 def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
              pretrain_lr=[0.002, 0.02], k=1, weight_decay=0.0002,
@@ -267,11 +278,12 @@ def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
              hidden_layers_sizes=[1024, 1024, 1024],
              n_ins=784, n_outs=10, filename="../data/DBN.pickle",
              load=True, save=True, verbose=False, pretraining_start=0,
-             pretraining_stop=-1, finetune=True):
+             pretraining_stop=-1, finetune=True, data_identifier = ''):
 
     if datasets is None:
         from load_data_MNIST import load_data
         datasets = load_data()
+        data_identifier = 'MNIST'
 
     train_set_x, train_set_y = datasets[0]
     valid_set_x, valid_set_y = datasets[1]
@@ -285,6 +297,37 @@ def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
 
     loaded = False
 
+    #prepare save directory
+    #inputFileFullName = os.path.split(filename)[1]
+    
+    timeStr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y_%m_%d_%H_%M_%S')
+    #saveDirPath = '../data/'+re.sub('.pickle$', '', inputFileFullName)+'_'+timeStr+"/"
+    saveDirPath = '../data/'+data_identifier+'_'+timeStr+"/"
+
+    if not os.path.exists(saveDirPath):
+        os.makedirs(saveDirPath)
+
+    #save run params
+    paramsStr = 'Data identifier: ' + data_identifier + '\n'
+    paramsStr += 'Processing time: ' + timeStr + '\n'
+    paramsStr += '\nNet parameters:\n' 
+    paramsStr += 'finetuning learning rate: %f\n' 
+    paramsStr += 'weight decay: %f \n'
+    paramsStr += 'momentum: %f \n' 
+    paramsStr += 'CD-k: %f \n'
+    paramsStr += 'pretraining epochs: ' + ', '.join(str(x) for x in pretraining_epochs) + '\n'
+    paramsStr += 'pretraining learning rate: ' + ', '.join(str(x) for x in pretrain_lr) + '\n'
+    paramsStr += 'batch size: %d \n'
+    paramsStr += 'hidden_layers_sizes: ' + ', '.join(str(x) for x in hidden_layers_sizes) + '\n'
+    paramsStr += 'inputs count: %d \n'
+    paramsStr += 'outputs count: %d \n'
+    paramsStr = paramsStr % (finetune_lr, weight_decay, momentum, k, batch_size, n_ins, n_outs)
+
+    file = open(saveDirPath+'parameters.txt', 'w')    
+    file.write(paramsStr)
+    file.close();
+    
+    
     if load:
         print '... trying to load the model'
 
@@ -302,7 +345,7 @@ def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
         dbn = GRBM_DBN(numpy_rng=numpy_rng, n_ins=n_ins,
                     hidden_layers_sizes=hidden_layers_sizes,
                     n_outs=n_outs)
-
+            
         #########################
         # PRETRAINING THE MODEL #
         #########################
@@ -364,8 +407,9 @@ def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
 
         if save:
             print '... saving the model'
-            dbn.save(filename)
-
+            dbn.save(saveDirPath+'pretrained_model')
+  
+            
     ########################
     # FINETUNING THE MODEL #
     ########################
@@ -427,10 +471,8 @@ def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
                                                   / 60.))
         
         if save:
-            ts = time.time()
-            st = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d_%H-%M-%S')
             print '... saving the final model'
-            dbn.save(re.sub('.pickle$', '', filename) + '_' + st + '.final.pickle')
+            dbn.save(saveDirPath+'final_model')
 
         return (best_validation_loss * 100., test_score * 100.)
 
