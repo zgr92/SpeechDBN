@@ -60,4 +60,5 @@ target/
 *.pickle
 
 #pliki logów
+results/*
 data/*

@@ -9,7 +9,8 @@ import datetime
 import re
 
 import numpy
-
+numpy.set_printoptions(threshold=numpy.nan)
+    
 import theano
 import theano.tensor as T
 from theano.tensor.shared_randomstreams import RandomStreams
@@ -36,6 +37,8 @@ def sigmoid(xx):
     return .5 * (1 + tanh(xx / 2.))
     
 from utils import tile_raster_images
+
+from Logger import Logger
 
 class GRBM_DBN(object):
 
@@ -272,19 +275,14 @@ class GRBM_DBN(object):
             
         return self.predict(input)
 
-def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
-             pretrain_lr=[0.002, 0.02], k=1, weight_decay=0.0002,
-             momentum=0.9, datasets=None, batch_size=128,
-             hidden_layers_sizes=[1024, 1024, 1024],
-             n_ins=784, n_outs=10, filename="../data/DBN.pickle",
-             load=True, save=True, verbose=False, pretraining_start=0,
-             pretraining_stop=-1, finetune=True, data_identifier = ''):
+def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75], pretrain_lr=[0.002, 0.02], k=1, weight_decay=0.0002,
+             momentum=0.9, datasets=None, batch_size=128, hidden_layers_sizes=[1024, 1024, 1024], n_ins=784, n_outs=10, 
+             verbose=False, pretraining_start=0, pretraining_stop=-1, finetune=True, saveToDir = None, loadModelFromFile = None):
 
     if datasets is None:
         from load_data_MNIST import load_data
         datasets = load_data()
-        data_identifier = 'MNIST'
-
+        
     train_set_x, train_set_y = datasets[0]
     valid_set_x, valid_set_y = datasets[1]
     test_set_x, test_set_y = datasets[2]
@@ -295,67 +293,66 @@ def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
     # numpy random generator
     numpy_rng = numpy.random.RandomState()
 
-    loaded = False
-
     #prepare save directory
-    #inputFileFullName = os.path.split(filename)[1]
+    if saveToDir is not None:
     
-    timeStr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y_%m_%d_%H_%M_%S')
-    #saveDirPath = '../data/'+re.sub('.pickle$', '', inputFileFullName)+'_'+timeStr+"/"
-    saveDirPath = '../data/'+data_identifier+'_'+timeStr+"/"
+        if saveToDir[-1] != '/':
+            saveToDir += '/'
 
-    if not os.path.exists(saveDirPath):
-        os.makedirs(saveDirPath)
+        if os.path.exists(saveToDir):
+            timeStr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y_%m_%d_%H_%M_%S')
+            saveToDir = saveToDir[:-1]+'_'+timeStr+"/"
 
+        os.makedirs(saveToDir)
+
+    logger = Logger(saveToDir, verbose)
+        
     #save run params
-    paramsStr = 'Data identifier: ' + data_identifier + '\n'
-    paramsStr += 'Processing time: ' + timeStr + '\n'
-    paramsStr += '\nNet parameters:\n' 
-    paramsStr += 'finetuning learning rate: %f\n' 
-    paramsStr += 'weight decay: %f \n'
-    paramsStr += 'momentum: %f \n' 
-    paramsStr += 'CD-k: %f \n'
-    paramsStr += 'pretraining epochs: ' + ', '.join(str(x) for x in pretraining_epochs) + '\n'
-    paramsStr += 'pretraining learning rate: ' + ', '.join(str(x) for x in pretrain_lr) + '\n'
-    paramsStr += 'batch size: %d \n'
-    paramsStr += 'hidden_layers_sizes: ' + ', '.join(str(x) for x in hidden_layers_sizes) + '\n'
-    paramsStr += 'inputs count: %d \n'
-    paramsStr += 'outputs count: %d \n'
-    paramsStr = paramsStr % (finetune_lr, weight_decay, momentum, k, batch_size, n_ins, n_outs)
-
-    file = open(saveDirPath+'parameters.txt', 'w')    
-    file.write(paramsStr)
-    file.close();
+    logger.logParameter('Start time', datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+    logger.logParameter('\nNet parameters','')
+    logger.logParameter('pretraining epochs', ', '.join(str(x) for x in pretraining_epochs))
+    logger.logParameter('pretraining learning rate', ', '.join(str(x) for x in pretrain_lr))
+    logger.logParameter('finetuning learning rate',finetune_lr)
+    logger.logParameter('weight decay', weight_decay)
+    logger.logParameter('momentum', momentum)
+    logger.logParameter('CD-k', k)
+    logger.logParameter('inputs count', n_ins)
+    logger.logParameter('outputs count', n_outs)
+    logger.logParameter('hidden layers sizes', ', '.join(str(x) for x in hidden_layers_sizes))
+    logger.logParameter('batch size', batch_size)
     
+    loaded = False
     
-    if load:
-        print '... trying to load the model'
+    if loadModelFromFile is not None:
+        logger.logParameter('loading model', loadModelFromFile)
+    
+        logger.log('... trying to load the model from '+ loadModelFromFile)
 
-        if os.path.isfile(filename):
-            dbn = GRBM_DBN.load(filename)
+        if os.path.isfile(loadModelFromFile):
+            dbn = GRBM_DBN.load(loadModelFromFile)
             dbn.update_finetune_cost(weight_decay=weight_decay)
-            loaded = True
-            print '... model loaded'
-        else:
-            print '... couldn\' find the model file'
 
+            loaded = True
+            logger.log('... model loaded')
+        else:
+            logger.log('... couldn\' find the model file')
+
+    
     if not loaded:
-        print '... building the model'
+        logger.log('... building the model')
+        
         # construct the Deep Belief Network
-        dbn = GRBM_DBN(numpy_rng=numpy_rng, n_ins=n_ins,
-                    hidden_layers_sizes=hidden_layers_sizes,
-                    n_outs=n_outs)
+        dbn = GRBM_DBN(numpy_rng=numpy_rng, n_ins=n_ins, hidden_layers_sizes=hidden_layers_sizes, n_outs=n_outs)
             
         #########################
         # PRETRAINING THE MODEL #
         #########################
 
-        print '... getting the pretraining functions'
-        pretraining_fns = dbn.pretraining_functions(train_set_x=train_set_x,
-                                                    batch_size=batch_size,
-                                                    k=k)
+        logger.log('... getting the pretraining functions')
+        pretraining_fns = dbn.pretraining_functions(train_set_x=train_set_x, batch_size=batch_size, k=k)
 
-        print '... pre-training the model'
+        logger.log('... pre-training the model')
+        
         start_time = time.clock()
         ## Pre-train layer-wise
 
@@ -374,7 +371,9 @@ def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
             # go through pretraining epochs
 
             for epoch in xrange(pretraining_epochs_new):
-                if verbose:
+                
+                #xaru: wylaczam, bo mi sie krzaczy
+                if False and verbose:
                     # weights
                     image = Image.fromarray(
                         tile_raster_images(
@@ -395,20 +394,17 @@ def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
                 # go through the training set
                 c = []
                 for batch_index in xrange(n_train_batches):
-                    c.append(pretraining_fns[i](index=batch_index,
-                                                lr=pretrain_lr_new))
+                    c.append(pretraining_fns[i](index=batch_index, lr=pretrain_lr_new))
+                
                 end_time_temp = time.clock()
-                print 'Pre-training layer %i, epoch %d, cost %f ' % (i + 1, epoch + 1, numpy.mean(c)) + ' ran for %d sec' % ((end_time_temp - start_time_temp) )
+                logger.log('Pre-training layer %i, epoch %d, cost %f ' % (i + 1, epoch + 1, numpy.mean(c)) + ' ran for %d sec' % ((end_time_temp - start_time_temp) ))
 
         end_time = time.clock()
-        print >> sys.stderr, ('The pretraining code for file ' +
-                              os.path.split(__file__)[1] +
-                              ' ran for %.2fm' % ((end_time - start_time) / 60.))
+        logger.log('The pretraining code for file ' + os.path.split(__file__)[1] + ' ran for %.2fm' % ((end_time - start_time) / 60.))
 
-        if save:
-            print '... saving the model'
-            dbn.save(saveDirPath+'pretrained_model')
-  
+        if saveToDir:
+            logger.log('... saving the model')
+            dbn.save(saveToDir+'pretrained_model')
             
     ########################
     # FINETUNING THE MODEL #
@@ -416,11 +412,10 @@ def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
 
     if finetune:
         # get the training, validation and testing function for the model
-        print '... getting the finetuning functions'
-        train_fn, validate_model, test_model = dbn.build_finetune_functions(
-                    datasets=datasets, batch_size=batch_size, momentum=momentum)
+        logger.log('... getting the finetuning functions')
+        train_fn, validate_model, test_model = dbn.build_finetune_functions(datasets=datasets, batch_size=batch_size, momentum=momentum)
 
-        print '... finetunning the model'
+        logger.log('... finetunning the model')
 
         best_params = None
         best_validation_loss = numpy.inf
@@ -442,16 +437,15 @@ def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
             warnings.filterwarnings("ignore")
             validation_losses = validate_model()
             this_validation_loss = numpy.mean(validation_losses)
-            print('epoch %i, validation error %f %%' % \
-                  (epoch, this_validation_loss * 100.))
+            
+            logger.log('epoch %i, validation error %f %%' % (epoch, this_validation_loss * 100))
 
             if this_validation_loss < best_validation_loss:
                 best_validation_loss = this_validation_loss
 
             if this_validation_loss > last_validation_loss:
                 current_lr /= 2.
-                print(('    learning rate halved to %f') %
-                      (current_lr))
+                logger.log(('learning rate halved to %f') %(current_lr))
 
             last_validation_loss = this_validation_loss
 
@@ -462,18 +456,13 @@ def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
         test_score = numpy.mean(test_losses)
 
         end_time = time.clock()
-        print(('Optimization complete with best validation score of %f %%,'
-               'with test performance %f %%') %
-                     (best_validation_loss * 100., test_score * 100.))
-        print >> sys.stderr, ('The fine tuning code for file ' +
-                              os.path.split(__file__)[1] +
-                              ' ran for %.2fm' % ((end_time - start_time)
-                                                  / 60.))
+        logger.log('Optimization complete with best validation score of %f %% with test performance %f %%' % (best_validation_loss * 100., test_score * 100.))
+        logger.log('The fine tuning code for file ' +os.path.split(__file__)[1] +' ran for %.2fm' % ((end_time - start_time)/ 60.))
         
-        if save:
-            print '... saving the final model'
-            dbn.save(saveDirPath+'final_model')
-
+        if saveToDir:
+            logger.log('... saving the final model')
+            dbn.save(saveToDir+'final_model')
+            
         return (best_validation_loss * 100., test_score * 100.)
 
     return (0., 0.)
