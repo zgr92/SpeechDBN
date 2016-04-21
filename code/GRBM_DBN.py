@@ -388,8 +388,7 @@ def test_GRBM_DBN(finetune_lr=0.1, pretraining_epochs=[225, 75],
 
             for epoch in xrange(pretraining_epochs_new):
 
-                #xaru: wylaczam, bo mi sie krzaczy
-                if False and verbose:
+                if verbose:
                     # weights
                     image = Image.fromarray(
                         tile_raster_images(
